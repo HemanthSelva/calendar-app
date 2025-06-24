@@ -5,7 +5,6 @@ import {
   HiChevronRight,
   HiExclamationCircle,
 } from "react-icons/hi";
-import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
 const categoryColors = {
   work: "bg-blue-100 text-blue-800 border-blue-300",
@@ -21,7 +20,6 @@ const Calendar = ({
   currentDate,
   setCurrentDate,
   onEditEvent,
-  setEvents,
 }) => {
   const startOfMonth = currentDate.startOf("month");
   const startDay = startOfMonth.day();
@@ -29,23 +27,6 @@ const Calendar = ({
 
   const handlePrev = () => setCurrentDate(currentDate.subtract(1, "month"));
   const handleNext = () => setCurrentDate(currentDate.add(1, "month"));
-
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-
-    const { draggableId, destination } = result;
-    const draggedEvent = events.find((e, i) => `event-${i}` === draggableId);
-    if (!draggedEvent) return;
-
-    const newDate = destination.droppableId;
-    const updatedEvent = { ...draggedEvent, date: newDate };
-
-    const updatedEvents = events.map((e) =>
-      e === draggedEvent ? updatedEvent : e
-    );
-
-    setEvents(updatedEvents);
-  };
 
   const generateDays = () => {
     const days = [];
@@ -61,71 +42,131 @@ const Calendar = ({
       const isToday = dayjs().isSame(date, "day");
 
       days.push(
-        <Droppable key={dateStr} droppableId={dateStr}>
-          {(provided) => (
-            <div
-              ref={provided.innerRef}
-              {...provided.droppableProps}
-              className={`border h-32 p-1 overflow-hidden transition-all duration-300 rounded-md relative ${
-                isToday
-                  ? "bg-blue-100 border-blue-500 scale-[1.02]"
-                  : "bg-white hover:shadow-md hover:scale-[1.01]"
-              }`}
-            >
-              <div className="text-sm font-bold text-right text-gray-700">
-                {day}
-              </div>
-              <div className="flex flex-col gap-1 mt-1 text-xs max-h-[90%] pr-1 overflow-y-auto">
-                {dayEvents.map((event, index) => {
-                  const eventStart = dayjs(`${event.date} ${event.time}`);
-                  const isConflict = dayEvents.some((e, i) => {
-                    if (i === index) return false;
-                    const otherStart = dayjs(`${e.date} ${e.time}`);
-                    return Math.abs(otherStart.diff(eventStart, "minute")) < 60;
-                  });
+        <div
+          key={day}
+          className={`border h-32 p-1 overflow-hidden transition-all duration-300 rounded-md relative ${
+            isToday
+              ? "bg-blue-100 border-blue-500 scale-[1.02]"
+              : "bg-white hover:shadow-md hover:scale-[1.01]"
+          }`}
+        >
+          <div className="text-sm font-bold text-right text-gray-700">
+            {day}
+          </div>
 
-                  const categoryClass =
-                    categoryColors[event.category] || categoryColors.other;
+          <div className="flex flex-col gap-1 mt-1 text-xs max-h-[90%] pr-1 overflow-y-auto">
+            {dayEvents.map((event, index) => {
+              const eventStart = dayjs(`${event.date} ${event.time}`);
+              const isConflict = dayEvents.some((e, i) => {
+                if (i === index) return false;
+                const otherStart = dayjs(`${e.date} ${e.time}`);
+                return Math.abs(otherStart.diff(eventStart, "minute")) < 60;
+              });
 
-                  return (
-                    <Draggable
-                      key={`event-${events.indexOf(event)}`}
-                      draggableId={`event-${events.indexOf(event)}`}
-                      index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          onClick={() => onEditEvent(event)}
-                          className={`cursor-pointer group text-xs font-medium px-2 py-1 rounded-md shadow-sm border transition-all duration-200 transform hover:scale-[1.02] ${categoryClass} ${
-                            isConflict ? "border-dashed border-2" : ""
-                          }`}
-                          title={`${event.title} at ${event.time} (${event.category})`}
-                        >
-                          {event.time} – {event.title}
-                          {isConflict && (
-                            <HiExclamationCircle className="inline text-red-600 text-sm ml-1" />
-                          )}
-                        </div>
-                      )}
-                    </Draggable>
-                  );
-                })}
-                {provided.placeholder}
-              </div>
-            </div>
-          )}
-        </Droppable>
+              const categoryClass =
+                categoryColors[event.category] || categoryColors["other"];
+
+              return (
+                <div
+                  key={index}
+                  onClick={() => onEditEvent(event)}
+                  className={`cursor-pointer group text-xs font-medium px-2 py-1 rounded-md shadow-sm border transition-all duration-200 transform hover:scale-[1.02] ${categoryClass} ${
+                    isConflict ? "border-dashed border-2" : ""
+                  }`}
+                  title={`${event.title} at ${event.time} (${event.category})`}
+                >
+                  {event.time} – {event.title}
+                  {isConflict && (
+                    <HiExclamationCircle className="inline text-red-600 text-sm ml-1" />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       );
     }
 
     return days;
   };
 
-  if (view !== "Month") {
-    return <div className="text-sm text-gray-600">Only Month view supports drag-and-drop.</div>;
+  if (view === "Agenda") {
+    return (
+      <div className="space-y-3 animate-fadeIn">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+          Upcoming Events
+        </h2>
+        {events
+          .sort((a, b) =>
+            dayjs(`${a.date} ${a.time}`).diff(dayjs(`${b.date} ${b.time}`))
+          )
+          .map((event, index) => {
+            const categoryClass =
+              categoryColors[event.category] || categoryColors["other"];
+            return (
+              <div
+                key={index}
+                onClick={() => onEditEvent(event)}
+                className={`cursor-pointer p-3 bg-white dark:bg-gray-800 rounded-md shadow border-l-4 transition ${categoryClass}`}
+              >
+                <div className="text-sm font-semibold text-gray-800 dark:text-white">
+                  {event.title}
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-300">
+                  {event.date} at {event.time} ({event.category})
+                </div>
+              </div>
+            );
+          })}
+      </div>
+    );
+  }
+
+  if (view === "Week") {
+    const weekStart = currentDate.startOf("week");
+    const weekDays = Array.from({ length: 7 }, (_, i) =>
+      weekStart.add(i, "day")
+    );
+
+    return (
+      <div className="animate-fadeIn">
+        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
+          Week of {weekStart.format("MMM D")}
+        </h2>
+        <div className="grid grid-cols-7 gap-2">
+          {weekDays.map((day) => {
+            const dateStr = day.format("YYYY-MM-DD");
+            const dayEvents = events.filter((e) => e.date === dateStr);
+
+            return (
+              <div
+                key={dateStr}
+                className="p-2 border rounded bg-white dark:bg-gray-800 h-40 overflow-hidden hover:scale-[1.01] transition"
+              >
+                <div className="text-sm font-bold text-gray-700 dark:text-gray-100 mb-1">
+                  {day.format("ddd D")}
+                </div>
+                <div className="flex flex-col gap-1 max-h-[85%] overflow-y-auto">
+                  {dayEvents.map((event, i) => {
+                    const categoryClass =
+                      categoryColors[event.category] || categoryColors["other"];
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => onEditEvent(event)}
+                        className={`text-xs rounded px-2 py-1 shadow-sm border cursor-pointer ${categoryClass}`}
+                      >
+                        {event.time} – {event.title}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -134,6 +175,7 @@ const Calendar = ({
         <button
           onClick={handlePrev}
           className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded flex items-center gap-1"
+          aria-label="Previous Month"
         >
           <HiChevronLeft />
         </button>
@@ -143,6 +185,7 @@ const Calendar = ({
         <button
           onClick={handleNext}
           className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded flex items-center gap-1"
+          aria-label="Next Month"
         >
           <HiChevronRight />
         </button>
@@ -156,9 +199,7 @@ const Calendar = ({
         ))}
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="grid grid-cols-7 gap-0 border">{generateDays()}</div>
-      </DragDropContext>
+      <div className="grid grid-cols-7 gap-0 border">{generateDays()}</div>
     </div>
   );
 };
