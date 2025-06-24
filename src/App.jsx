@@ -1,11 +1,11 @@
-import SummaryPanel from "./components/SummaryPanel";
 import { useState, useEffect, useRef } from "react";
+import dayjs from "dayjs";
 import Calendar from "./components/Calendar";
+import SummaryPanel from "./components/SummaryPanel";
 import EventModal from "./components/EventModal";
 import { scheduleEventReminders } from "./utils/notifications";
-import dayjs from "dayjs";
-import { HiCalendar } from "react-icons/hi";
 import Papa from "papaparse";
+import { HiCalendar } from "react-icons/hi";
 import "./index.css";
 
 function App() {
@@ -18,15 +18,17 @@ function App() {
   const [currentDate, setCurrentDate] = useState(dayjs());
   const [events, setEvents] = useState(() => {
     const stored = localStorage.getItem("calendar-events");
-    return stored ? JSON.parse(stored) : [
-      {
-        title: "Team Sync-Up",
-        date: "2025-06-24",
-        time: "10:00",
-        category: "work",
-        recurrence: "none",
-      },
-    ];
+    return stored
+      ? JSON.parse(stored)
+      : [
+          {
+            title: "Team Sync-Up",
+            date: "2025-06-24",
+            time: "10:00",
+            category: "work",
+            recurrence: "none",
+          },
+        ];
   });
 
   const fileInputRef = useRef(null);
@@ -38,7 +40,7 @@ function App() {
 
   useEffect(() => {
     localStorage.setItem("calendar-events", JSON.stringify(events));
-    scheduleEventReminders(events); // 🚨 Notify upcoming events
+    scheduleEventReminders(events);
   }, [events]);
 
   useEffect(() => {
@@ -56,13 +58,7 @@ function App() {
       const count = recurrence === "daily" ? 10 : 5;
       for (let i = 0; i < count; i++) {
         const futureDate = base.add(i, recurrence === "daily" ? "day" : recurrence).format("YYYY-MM-DD");
-        generated.push({
-          title,
-          date: futureDate,
-          time,
-          category,
-          recurrence: "none",
-        });
+        generated.push({ title, date: futureDate, time, category, recurrence: "none" });
       }
     }
 
@@ -100,27 +96,10 @@ function App() {
     setShowModal(true);
   };
 
-  const filteredEvents = events.filter((event) => {
-    const q = searchQuery.toLowerCase();
-    const dateStr = dayjs(event.date).format("MMM D, YYYY").toLowerCase();
-    return (
-      event.title.toLowerCase().includes(q) ||
-      event.time.toLowerCase().includes(q) ||
-      event.category.toLowerCase().includes(q) ||
-      dateStr.includes(q)
-    );
-  });
-
   const downloadCSV = () => {
     const csvRows = [
       ["Title", "Date", "Time", "Category", "Recurrence"],
-      ...filteredEvents.map((e) => [
-        e.title,
-        e.date,
-        e.time,
-        e.category,
-        e.recurrence,
-      ]),
+      ...events.map((e) => [e.title, e.date, e.time, e.category, e.recurrence]),
     ];
     const csvContent = csvRows.map((r) => r.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
@@ -202,9 +181,9 @@ function App() {
         </div>
       </div>
 
-      {/* Summary Panel */}
+      {/* Summary */}
       <div className="max-w-7xl mx-auto mb-4">
-        <SummaryPanel events={filteredEvents} />
+        <SummaryPanel events={events} />
       </div>
 
       {/* View Toggle */}
@@ -259,20 +238,20 @@ function App() {
           </div>
         </div>
 
-        {/* Calendar View */}
+        {/* Main Calendar */}
         <div className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 overflow-x-auto">
           <Calendar
-            events={filteredEvents}
+            events={events}
             view={currentView}
             currentDate={currentDate}
             setCurrentDate={setCurrentDate}
             onEditEvent={handleOpenEdit}
-            setEvents={setEvents} // ✅ Needed for drag-and-drop rescheduling
+            searchQuery={searchQuery} // ✅ Pass query for highlighting
           />
         </div>
       </div>
 
-      {/* Floating Add Button */}
+      {/* Floating Button */}
       <button
         onClick={() => {
           setModalMode("add");

@@ -20,6 +20,7 @@ const Calendar = ({
   currentDate,
   setCurrentDate,
   onEditEvent,
+  searchQuery = "",
 }) => {
   const startOfMonth = currentDate.startOf("month");
   const startDay = startOfMonth.day();
@@ -27,6 +28,17 @@ const Calendar = ({
 
   const handlePrev = () => setCurrentDate(currentDate.subtract(1, "month"));
   const handleNext = () => setCurrentDate(currentDate.add(1, "month"));
+
+  const isEventMatch = (event) => {
+    const q = searchQuery.toLowerCase();
+    const dateStr = dayjs(event.date).format("MMM D, YYYY").toLowerCase();
+    return (
+      event.title.toLowerCase().includes(q) ||
+      event.time.toLowerCase().includes(q) ||
+      event.category.toLowerCase().includes(q) ||
+      dateStr.includes(q)
+    );
+  };
 
   const generateDays = () => {
     const days = [];
@@ -63,6 +75,7 @@ const Calendar = ({
                 return Math.abs(otherStart.diff(eventStart, "minute")) < 60;
               });
 
+              const isMatch = isEventMatch(event);
               const categoryClass =
                 categoryColors[event.category] || categoryColors["other"];
 
@@ -72,7 +85,7 @@ const Calendar = ({
                   onClick={() => onEditEvent(event)}
                   className={`cursor-pointer group text-xs font-medium px-2 py-1 rounded-md shadow-sm border transition-all duration-200 transform hover:scale-[1.02] ${categoryClass} ${
                     isConflict ? "border-dashed border-2" : ""
-                  }`}
+                  } ${isMatch ? "ring-2 ring-blue-500" : ""}`}
                   title={`${event.title} at ${event.time} (${event.category})`}
                 >
                   {event.time} – {event.title}
@@ -94,20 +107,24 @@ const Calendar = ({
     return (
       <div className="space-y-3 animate-fadeIn">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-          Upcoming Events
+          📋 Upcoming Events
         </h2>
         {events
           .sort((a, b) =>
             dayjs(`${a.date} ${a.time}`).diff(dayjs(`${b.date} ${b.time}`))
           )
           .map((event, index) => {
+            const isMatch = isEventMatch(event);
             const categoryClass =
               categoryColors[event.category] || categoryColors["other"];
+
             return (
               <div
                 key={index}
                 onClick={() => onEditEvent(event)}
-                className={`cursor-pointer p-3 bg-white dark:bg-gray-800 rounded-md shadow border-l-4 transition ${categoryClass}`}
+                className={`cursor-pointer p-3 bg-white dark:bg-gray-800 rounded-md shadow border-l-4 transition ${categoryClass} ${
+                  isMatch ? "ring-2 ring-blue-500" : ""
+                }`}
               >
                 <div className="text-sm font-semibold text-gray-800 dark:text-white">
                   {event.title}
@@ -131,7 +148,7 @@ const Calendar = ({
     return (
       <div className="animate-fadeIn">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-          Week of {weekStart.format("MMM D")}
+          🗓️ Week of {weekStart.format("MMM D")}
         </h2>
         <div className="grid grid-cols-7 gap-2">
           {weekDays.map((day) => {
@@ -148,13 +165,16 @@ const Calendar = ({
                 </div>
                 <div className="flex flex-col gap-1 max-h-[85%] overflow-y-auto">
                   {dayEvents.map((event, i) => {
+                    const isMatch = isEventMatch(event);
                     const categoryClass =
                       categoryColors[event.category] || categoryColors["other"];
                     return (
                       <div
                         key={i}
                         onClick={() => onEditEvent(event)}
-                        className={`text-xs rounded px-2 py-1 shadow-sm border cursor-pointer ${categoryClass}`}
+                        className={`text-xs rounded px-2 py-1 shadow-sm border cursor-pointer transition-all ${categoryClass} ${
+                          isMatch ? "ring-2 ring-blue-500" : ""
+                        }`}
                       >
                         {event.time} – {event.title}
                       </div>
@@ -175,7 +195,6 @@ const Calendar = ({
         <button
           onClick={handlePrev}
           className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded flex items-center gap-1"
-          aria-label="Previous Month"
         >
           <HiChevronLeft />
         </button>
@@ -185,7 +204,6 @@ const Calendar = ({
         <button
           onClick={handleNext}
           className="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded flex items-center gap-1"
-          aria-label="Next Month"
         >
           <HiChevronRight />
         </button>
