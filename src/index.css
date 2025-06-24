@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base Styling */
+body {
+  @apply bg-gray-100 text-gray-900 font-sans antialiased;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Dark Mode Support */
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Scrollbar Customization */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #94a3b8; /* slate-400 */
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155; /* slate-800 */
+}
+
+/* Smooth Hover Transitions */
+button,
+input,
+select {
+  transition: all 0.2s ease;
+}
